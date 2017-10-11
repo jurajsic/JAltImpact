@@ -1,0 +1,23 @@
+#First name
+Joo
+
+#Last name
+In
+
+#User name
+joo-in@outlook.com
+
+#Password
+jooin1234567890
+
+#Country/region
+Belgium
+
+#Birthdate
+October 1 2015
+
+#Gender
+Not specified
+
+#Alternate email address
+xiao.xu@outlook.be
