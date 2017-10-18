@@ -19,6 +19,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.FormulaType;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -69,9 +70,9 @@ public class ADA {
 	}
 
 /**
-* make an OR Boolean formula
-* @param bs : (can be several) all the Boolean formulae to be put into OR
-*/
+ * make an OR Boolean formula
+ * @param bs : (can be several) all the Boolean formulae to be put into OR
+ */
 	BooleanFormula or(BooleanFormula... bs) {
 		return bmgr.or(bs);
 	}
@@ -84,6 +85,24 @@ public class ADA {
 		return fmgr.parse("(assert " + f + ")");
 	}
 
+/**
+ * get all free Boolean variables from a given formula
+ * @param f : formula from which all free Boolean variables will be got
+ */
+	ArrayList<BooleanFormula> getFreeBooleanVariables(Formula f) {
+		ArrayList<BooleanFormula> result = new ArrayList<BooleanFormula>();
+		Map<String, Formula> allFreeVariablesMap = fmgr.extractVariables(f);
+		Iterator<Entry<String, Formula>> iter = allFreeVariablesMap.entrySet().iterator();
+		while(iter.hasNext()) {
+			Entry<String, Formula> entry = (Entry<String, Formula>) iter.next();
+			Formula temp = entry.getValue();
+			if(fmgr.getFormulaType(temp).toString().equals("Boolean")) {
+				result.add((BooleanFormula) temp);
+			}
+		}
+		return result;
+	}
+	
 /**
  * check if a Boolean formula is satisfiable
  * @param constraint : Boolean formula to be checked
@@ -274,51 +293,70 @@ public class ADA {
 		writer.close();
 	}
 	
-	/**
-	 * add time-stamp to a Boolean formula
-	 * @param original : original Boolean formula
-	 * @param stamp : time-stamp to be added
-	 */
-		BooleanFormula addTimeStamp(BooleanFormula original, int stamp) {
-			Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
-			// add time-stamp for states
-			for(int i = 0; i < Q.size(); i++)
-				fromToMapping.put(Q.get(i), make_bool(Q.get(i).toString() + '_' + stamp));
-			// add time-stamp for variables
-			for(int i = 0; i < X.size(); i++) {
-				fromToMapping.put(make_int(X.get(i).toString() + '0'), make_int(X.get(i).toString() + stamp));
-				fromToMapping.put(make_int(X.get(i).toString() + '1'), make_int(X.get(i).toString() + (stamp + 1)));
-			}
-			BooleanFormula result = fmgr.substitute(original, fromToMapping);
-			return result;
+/**
+ * add time-stamp to a Boolean formula
+ * @param original : original Boolean formula
+ * @param stamp : time-stamp to be added
+ */
+	BooleanFormula addTimeStamp(BooleanFormula original, int stamp) {
+		Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+		// add time-stamp for states
+		for(int i = 0; i < Q.size(); i++)
+			fromToMapping.put(Q.get(i), make_bool(Q.get(i).toString() + '_' + stamp));
+		// add time-stamp for variables
+		for(int i = 0; i < X.size(); i++) {
+			fromToMapping.put(make_int(X.get(i).toString() + '0'), make_int(X.get(i).toString() + stamp));
+			fromToMapping.put(make_int(X.get(i).toString() + '1'), make_int(X.get(i).toString() + (stamp + 1)));
 		}
+		BooleanFormula result = fmgr.substitute(original, fromToMapping);
+		return result;
+	}
 	
+	class Edge {
+		
+		Node left;
+		String symbol;
+		Node right;
+		ArrayList<BooleanFormula> thetaLeft;
+		ArrayList<BooleanFormula> thetaRight;
+		
+		public Edge() {
+			left = null;
+			symbol = null;
+			right = null;
+			thetaLeft = new ArrayList<BooleanFormula>();
+			thetaRight = new ArrayList<BooleanFormula>();
+		}
+		
+		public Edge(Edge e) {
+			left = e.left;
+			symbol = e.symbol;
+			right = e.right;
+			thetaLeft = new ArrayList<BooleanFormula>(e.thetaLeft);
+			thetaRight = new ArrayList<BooleanFormula>(e.thetaRight);
+		}
+		
+	}
+		
 	class Node {
 		
 		int num;
-		Node father;
-		ArrayList<String> arrivingSymbol;
+		Edge fatherEdge;
 		BooleanFormula label;
-		Map<String, Node> children;
+		ArrayList<Edge> childrenEdge;
 		
 		public Node() {
 			num = -1;
-			father = null;
-			arrivingSymbol = new ArrayList<String>();
+			fatherEdge = null;
 			label = null;
-			children = new HashMap<String, Node>();
+			childrenEdge = new ArrayList<Edge>();
 		}
 		
 		public Node(Node n) {
 			num = n.num;
-			father = n.father;
-			arrivingSymbol = new ArrayList<String>(n.arrivingSymbol);
+			fatherEdge = n.fatherEdge;
 			label = n.label;
-			children = new HashMap<String, Node>(n.children);
-		}
-		
-		public void addChild(String symbol, Node child) {
-			children.put(symbol, child);
+			childrenEdge = new ArrayList<Edge>(n.childrenEdge);
 		}
 		
 		public String toString( ) {
@@ -327,13 +365,7 @@ public class ADA {
 		
 		public CheckResult isAccepting() {
 			CheckResult result = new CheckResult();
-			BooleanFormula toCheck = addTimeStamp(i, 0);
-			ArrayList<String> freeVariables = new ArrayList<String>();
-			freeVariables.add(i.toString());
-			for(int i = 0; i < arrivingSymbol.size(); i++) {
-				
-			}
-			System.out.println(result);
+			
 			return result;
 		}
 		
@@ -356,6 +388,8 @@ public class ADA {
 		// initialize
 			/* set of nodes */
 			ArrayList<Node> N = new ArrayList<Node>();
+			/* set of edges */
+			ArrayList<Edge> E = new ArrayList<Edge>();
 			/* work list */
 			ArrayList<Node> WorkList = new ArrayList<Node>();
 			/* coverage */
@@ -378,10 +412,10 @@ public class ADA {
 			N.add(n);
 			// check if n is accepting
 			CheckResult result = n.isAccepting();
+			System.out.println("\n" + result);
 			if(result.value) {
 				// counterexample is feasible
-				System.out.println("Model found:");
-				System.out.println(result.model);
+				
 				return false;
 			}
 			else {
