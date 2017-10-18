@@ -369,17 +369,34 @@ public class ADA {
 		
 		public CheckResult isAccepting() throws SolverException, InterruptedException {
 			CheckResult result = new CheckResult();
+			// collect all edges along the path
 			ArrayList<Edge> temp = new ArrayList<Edge>();
 			for(Node current = this; current.label != i; current = current.fatherEdge.left)
 				temp.add(0, fatherEdge);
+			// add time-stamp for initial state
+			BooleanFormula iWithTimeStamp = addTimeStamp(i, 0);
+			// collect all the time-stamp-added formulae
+			ArrayList<BooleanFormula> formulaGroup = new ArrayList<BooleanFormula>();
+			formulaGroup.add(iWithTimeStamp);
 			
-			BooleanFormula x = parse("(> x1 1)"), y = parse("(<= x1 1)");
-			InterpolatingProverEnvironment<BooleanFormula> prover = (InterpolatingProverEnvironment<BooleanFormula>) context.newProverEnvironmentWithInterpolation();
-			List<BooleanFormula> z = new ArrayList<BooleanFormula>();
-			z.add(x);
-			z.add(y);
-			//prover.push(make_bool("true"));
-			System.out.println(prover.getInterpolant(z));
+			BooleanFormula x = parse("(< x 3)"), y = parse("(> x 3)"), z = parse("(> x 2)");
+			InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation();
+			Object xx = prover.push(x);
+			Object yy = prover.push(y);
+			Object zz = prover.push(z);
+			List<Set> r = new ArrayList<Set>();
+			Set<Object> s1 = new HashSet();
+			s1.add(xx);
+			r.add(s1);
+			Set<Object> s2 = new HashSet();
+			s2.add(yy);
+			r.add(s2);
+			Set<Object> s3 = new HashSet();
+			s3.add(zz);
+			r.add(s3);
+			prover.isUnsat();
+			List<BooleanFormula> rr = prover.getSeqInterpolants(r);
+			System.out.println(rr);
 			return result;
 		}
 		
