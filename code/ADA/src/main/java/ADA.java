@@ -17,6 +17,7 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -51,6 +52,15 @@ public class ADA {
 	}
 
 /**
+ * make an IMPLIES Boolean formula
+ * @param b1 : left side of implication
+ * @param b2 : right side of implication 
+ */
+	BooleanFormula implies(BooleanFormula b1, BooleanFormula b2) {
+		return bmgr.implication(b1, b2);
+	}
+	
+/**
  * make an AND Boolean formula
  * @param bs : (can be several) all the Boolean formulae to be put into AND
  */
@@ -76,10 +86,9 @@ public class ADA {
 
 /**
  * check if a Boolean formula is satisfiable
- * @param constraint : Boolean formula to be check
- * @return [.sat : Boolean] whether the formula is satisfiable [.model : Model] an example proving the satisfiability
+ * @param constraint : Boolean formula to be checked
  */	
-	CheckResult checkSAT(BooleanFormula constraint)
+	boolean isSatisfiable(BooleanFormula constraint)
 			throws
 			SolverException,
 			InterruptedException
@@ -89,12 +98,7 @@ public class ADA {
 	// else, then return UNSAT
 		ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS);
 		prover.addConstraint(constraint);
-		CheckResult result = new CheckResult();
-		result.sat = !prover.isUnsat();
-		if(result.sat) {
-			result.model = prover.getModel();
-		}
-		return result;
+		return !prover.isUnsat();
 	}
 	
 	// ====================
@@ -133,6 +137,10 @@ public class ADA {
 	
 	// transitions
 	Map<String, BooleanFormula> DELTA;
+	
+	// supports
+		/* conjunction of final implications */
+		BooleanFormula finalImplications;
 
 /**
  * parse a file to assign the ADA
@@ -156,7 +164,7 @@ public class ADA {
 		reader.readLine();
 		reader.readLine();
 		temp = reader.readLine();
-		i = make_bool(temp);
+		i = parse(temp);
 		// read final state
 		F = new ArrayList<BooleanFormula>();
 		reader.readLine();
@@ -265,13 +273,121 @@ public class ADA {
 		// close file
 		writer.close();
 	}
+	
+	/**
+	 * add time-stamp to a Boolean formula
+	 * @param original : original Boolean formula
+	 * @param stamp : time-stamp to be added
+	 */
+		BooleanFormula addTimeStamp(BooleanFormula original, int stamp) {
+			Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+			// add time-stamp for states
+			for(int i = 0; i < Q.size(); i++)
+				fromToMapping.put(Q.get(i), make_bool(Q.get(i).toString() + '_' + stamp));
+			// add time-stamp for variables
+			for(int i = 0; i < X.size(); i++) {
+				fromToMapping.put(make_int(X.get(i).toString() + '0'), make_int(X.get(i).toString() + stamp));
+				fromToMapping.put(make_int(X.get(i).toString() + '1'), make_int(X.get(i).toString() + (stamp + 1)));
+			}
+			BooleanFormula result = fmgr.substitute(original, fromToMapping);
+			return result;
+		}
+	
+	class Node {
+		
+		int num;
+		Node father;
+		ArrayList<String> arrivingSymbol;
+		BooleanFormula label;
+		Map<String, Node> children;
+		
+		public Node() {
+			num = -1;
+			father = null;
+			arrivingSymbol = new ArrayList<String>();
+			label = null;
+			children = new HashMap<String, Node>();
+		}
+		
+		public Node(Node n) {
+			num = n.num;
+			father = n.father;
+			arrivingSymbol = new ArrayList<String>(n.arrivingSymbol);
+			label = n.label;
+			children = new HashMap<String, Node>(n.children);
+		}
+		
+		public void addChild(String symbol, Node child) {
+			children.put(symbol, child);
+		}
+		
+		public String toString( ) {
+			return label.toString();
+		}
+		
+		public CheckResult isAccepting() {
+			CheckResult result = new CheckResult();
+			BooleanFormula toCheck = addTimeStamp(i, 0);
+			ArrayList<String> freeVariables = new ArrayList<String>();
+			freeVariables.add(i.toString());
+			for(int i = 0; i < arrivingSymbol.size(); i++) {
+				
+			}
+			System.out.println(result);
+			return result;
+		}
+		
+	}
 
 /** check if the ADA is empty */
 	public boolean is_empty()
 			throws
 			IOException
 	{
-		saveIntoFile("examples/temp.ada");
+		// setup final conjunction of implications
+		for(int i = 0; i < Q.size(); i++) {
+			if(!F.contains(Q.get(i))) {
+				if(finalImplications == null)
+					finalImplications = implies(Q.get(i), make_bool("false"));
+				else
+					finalImplications = and(finalImplications, implies(Q.get(i), make_bool("false")));
+			}
+		}
+		// initialize
+			/* set of nodes */
+			ArrayList<Node> N = new ArrayList<Node>();
+			/* work list */
+			ArrayList<Node> WorkList = new ArrayList<Node>();
+			/* coverage */
+			ArrayList<Node> Covered = new ArrayList<Node>();
+			ArrayList<Node> Covering = new ArrayList<Node>();
+			/* root */
+			Node r = new Node();
+			r.label = i;
+			r.num = 0;
+			WorkList.add(r);
+		
+		// start
+		while(!WorkList.isEmpty())
+		{
+			// dequeue n from WorkList
+			Node n = new Node(WorkList.get(0));
+			System.out.println("Current [Node " + n.num + "] : " + n);
+			WorkList.remove(0);
+			// add n into N
+			N.add(n);
+			// check if n is accepting
+			CheckResult result = n.isAccepting();
+			if(result.value) {
+				// counterexample is feasible
+				System.out.println("Model found:");
+				System.out.println(result.model);
+				return false;
+			}
+			else {
+				// spurious counterexample
+			}
+		}
 	    return true;
 	}
 }

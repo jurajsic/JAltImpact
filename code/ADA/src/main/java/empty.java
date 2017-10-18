@@ -27,10 +27,13 @@ public class empty {
     
 	  long start = System.currentTimeMillis();
 	  
-	  ada.is_empty();
+	  if(ada.is_empty())
+		  System.out.println("-----\nEMPTY\n-----");
+	  else
+		  System.out.println("---------\nNOT EMPTY\n---------");
 	  
 	  long end = System.currentTimeMillis();
-	  System.out.printf("\n--------------------\n# Time Cost (ms): %s", String.valueOf(end - start));
+	  System.out.printf("\n# Time Cost (ms): %s", String.valueOf(end - start));
   }
   
 }
