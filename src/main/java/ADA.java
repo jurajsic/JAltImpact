@@ -67,6 +67,14 @@ public class ADA {
 	}
 	
 /**
+ * make a NOT Boolean formula
+ * @param b : Boolean formula to be negated
+ */
+	BooleanFormula not(BooleanFormula b) {
+		return bmgr.not(b);
+	}
+	
+/**
  * make an AND Boolean formula
  * @param bs : (can be several) all the Boolean formulae to be put into AND
  */
@@ -99,6 +107,29 @@ public class ADA {
 	}
 	
 /**
+ * 	given 2 Boolean formulae, check whether the implication is valid
+ * @param b1 : left side of implication
+ * @param b2 : right side of implication
+ * @throws InterruptedException 
+ * @throws SolverException 
+ */
+	boolean implicationIsValid(BooleanFormula b1, BooleanFormula b2)
+			throws
+			SolverException,
+			InterruptedException
+	{
+		BooleanFormula implication = implies(b1, b2);
+		ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+		prover.addConstraint(not(implication));
+		boolean isUnsat = prover.isUnsat();
+		prover.close();
+		if(isUnsat)
+			return true;
+		else
+			return false;	
+	}
+	
+/**
  * parse a SMT format string to build a Boolean formula
  * @param f : SMT format string to be parsed
  */
@@ -106,6 +137,40 @@ public class ADA {
 		return fmgr.parse("(assert " + f + ")");
 	}
 
+/**
+ * given n Boolean formulae, check the satisfiability of the conjunction of these Boolean formulae
+ * if not satisfiable, then compute the interpolants (there will be n - 1 interpolants)
+ * @param cb : collection of n Boolean formulae
+ * @return [.value] whether the conjunction is satisfiable [.model] model proving satisfiability if satisfiable [.interpolants] collection of interpolants if not satisfiable
+ * @throws InterruptedException 
+ * @throws SolverException 
+ */
+	CheckResult checkConjunctionSatisfiability(ArrayList<BooleanFormula> cb)
+			throws
+			SolverException,
+			InterruptedException
+	{
+		CheckResult result = new CheckResult();
+		InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation();
+		List<Set> temp = new ArrayList<Set>();
+		for(int i = 0; i < cb.size(); i++) {
+			Set<Object> temp2 = new HashSet();
+			Object temp3 = prover.push(cb.get(i));
+			temp2.add(temp3);
+			temp.add(temp2);
+		}
+		if(prover.isUnsat()) {
+			result.value = false;
+			result.interpolants = (ArrayList<BooleanFormula>) prover.getSeqInterpolants(temp);
+		}
+		else {
+			result.value = true;
+			result.model = prover.getModel();
+		}
+		prover.close();
+		return result;
+	}
+	
 /**
  * get all free Boolean variables from a given formula
  * @param f : formula from which all free Boolean variables will be got
@@ -304,13 +369,31 @@ public class ADA {
  */
 	BooleanFormula addTimeStamp(BooleanFormula original, int stamp) {
 		Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
-		// add time-stamp for states
+		// add time-stamp to states
 		for(int i = 0; i < Q.size(); i++)
 			fromToMapping.put(Q.get(i), make_bool(Q.get(i).toString() + '_' + stamp));
-		// add time-stamp for variables
+		// add time-stamp to variables
 		for(int i = 0; i < X.size(); i++) {
-			fromToMapping.put(make_int(X.get(i).toString() + '0'), make_int(X.get(i).toString() + stamp));
-			fromToMapping.put(make_int(X.get(i).toString() + '1'), make_int(X.get(i).toString() + (stamp + 1)));
+			fromToMapping.put(make_int(X.get(i).toString() + '0'), make_int(X.get(i).toString() + (stamp - 1)));
+			fromToMapping.put(make_int(X.get(i).toString() + '1'), make_int(X.get(i).toString() + stamp));
+		}
+		BooleanFormula result = fmgr.substitute(original, fromToMapping);
+		return result;
+	}
+	
+/**
+ * remove time-stamp from a Boolean formula
+ * @param original : original Boolean formula
+ * @param stamp : time-stamp to be removed
+ */
+	BooleanFormula removeTimeStamp(BooleanFormula original, int stamp) {
+		Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+		// remove time-stamp from states
+		for(int i = 0; i < Q.size(); i++)
+			fromToMapping.put(make_bool(Q.get(i).toString() + '_' + stamp), Q.get(i));
+		// remove time-stamp from variables
+		for(int i = 0; i < X.size(); i++) {
+			fromToMapping.put(make_int(X.get(i).toString() + stamp), X.get(i));
 		}
 		BooleanFormula result = fmgr.substitute(original, fromToMapping);
 		return result;
@@ -347,20 +430,20 @@ public class ADA {
 		int num;
 		Edge fatherEdge;
 		BooleanFormula label;
-		ArrayList<Edge> childrenEdge;
+		ArrayList<BooleanFormula> R;
 		
 		public Node() {
 			num = -1;
 			fatherEdge = null;
 			label = null;
-			childrenEdge = new ArrayList<Edge>();
+			R = new ArrayList<BooleanFormula>();
 		}
 		
 		public Node(Node n) {
 			num = n.num;
 			fatherEdge = n.fatherEdge;
 			label = n.label;
-			childrenEdge = new ArrayList<Edge>(n.childrenEdge);
+			R = new ArrayList<BooleanFormula>(n.R);
 		}
 		
 		public String toString( ) {
@@ -368,36 +451,77 @@ public class ADA {
 		}
 		
 		public CheckResult isAccepting() throws SolverException, InterruptedException {
-			CheckResult result = new CheckResult();
 			// collect all edges along the path
-			ArrayList<Edge> temp = new ArrayList<Edge>();
-			for(Node current = this; current.label != i; current = current.fatherEdge.left)
-				temp.add(0, fatherEdge);
-			// add time-stamp for initial state
+			ArrayList<Edge> edges = new ArrayList<Edge>();
+			for(Node current = this; current.label != i; current = current.fatherEdge.left) {
+				edges.add(0, current.fatherEdge);
+			}
+			// add time-stamp to initial state
 			BooleanFormula iWithTimeStamp = addTimeStamp(i, 0);
-			// collect all the time-stamp-added formulae
+			// add time-stamp to final implications
+			BooleanFormula finalImplicationsWithTimeStamp = addTimeStamp(finalImplications, edges.size());
+			// add time-stamp to edges and collect all the time-stamp-added formulae
 			ArrayList<BooleanFormula> formulaGroup = new ArrayList<BooleanFormula>();
 			formulaGroup.add(iWithTimeStamp);
-			
-			BooleanFormula x = parse("(< x 3)"), y = parse("(> x 3)"), z = parse("(> x 2)");
-			InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation();
-			Object xx = prover.push(x);
-			Object yy = prover.push(y);
-			Object zz = prover.push(z);
-			List<Set> r = new ArrayList<Set>();
-			Set<Object> s1 = new HashSet();
-			s1.add(xx);
-			r.add(s1);
-			Set<Object> s2 = new HashSet();
-			s2.add(yy);
-			r.add(s2);
-			Set<Object> s3 = new HashSet();
-			s3.add(zz);
-			r.add(s3);
-			prover.isUnsat();
-			List<BooleanFormula> rr = prover.getSeqInterpolants(r);
-			System.out.println(rr);
+			for(int i = 0; i < edges.size(); i++) {
+				BooleanFormula thetaLeftWithTimeStamp = addTimeStamp(edges.get(i).thetaLeft.get(0), i);
+				BooleanFormula thetaRightWithTimeStamp = addTimeStamp(edges.get(i).thetaRight.get(0), i + 1);
+				BooleanFormula thetaWithTimeStamp = implies(thetaLeftWithTimeStamp, thetaRightWithTimeStamp);
+				for(int j = 1; j < edges.get(i).thetaLeft.size(); j++) {
+					thetaLeftWithTimeStamp = addTimeStamp(edges.get(i).thetaLeft.get(j), i);
+					thetaRightWithTimeStamp = addTimeStamp(edges.get(i).thetaRight.get(j), i + 1);
+					thetaWithTimeStamp = and(thetaWithTimeStamp, implies(thetaLeftWithTimeStamp, thetaRightWithTimeStamp));
+				}
+				formulaGroup.add(thetaWithTimeStamp);
+			}
+			formulaGroup.add(finalImplicationsWithTimeStamp);
+			// check satisfiability of the conjunction
+			System.out.println(formulaGroup);
+			CheckResult result = checkConjunctionSatisfiability(formulaGroup);
+			// remove time-stamps from the interpolants
+			for(int i = 0; i < result.interpolants.size(); i++) {
+				result.interpolants.set(i, removeTimeStamp(result.interpolants.get(i), i));
+			}
 			return result;
+		}
+		
+		public boolean isSuccessorOf(Node n) {
+			for(Node current = this; current != null; current = (current.fatherEdge == null ? null : current.fatherEdge.left)) {
+				if(current.num == n.num)
+					return true;
+			}
+			return false;
+		}
+		
+		public boolean close(ArrayList<Node> N, ArrayList<Node> Covered, ArrayList<Node> Covering)
+				throws
+				SolverException,
+				InterruptedException
+		{
+			for(int i = 0; i < num; i++) {
+				Node y = N.get(i);
+				if(implicationIsValid(label, y.label)) {
+					for(int j = 0; j < Covering.size(); j++) {
+						if(Covering.get(j).isSuccessorOf(this)) {
+							Covered.remove(j);
+							Covering.remove(j);
+							j--;
+						}
+					}
+					Covered.add(this);
+					Covering.add(y);
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		public boolean isCovered(ArrayList<Node> Covered) {
+			for(Node current = this; current != null; current = (current.fatherEdge == null ? null : current.fatherEdge.left)) {
+				if(Covered.contains(current))
+					return true;
+			}
+			return false;
 		}
 		
 	}
@@ -429,29 +553,99 @@ public class ADA {
 			/* root */
 			Node r = new Node();
 			r.label = i;
-			r.num = 0;
+			r.R = getFreeBooleanVariables(i);
 			WorkList.add(r);
 		
 		// start
+		int nodeCounter = 0;
 		while(!WorkList.isEmpty())
 		{
 			// dequeue n from WorkList
-			Node n = new Node(WorkList.get(0));
-			System.out.println("Current [Node " + n.num + "] : " + n);
+			Node n = WorkList.get(0);
 			WorkList.remove(0);
 			// add n into N
 			N.add(n);
-			// check if n is accepting
+			n.num = nodeCounter++;
+			System.out.println("Current [Node " + n.num + "] : " + n);
+			// check whether n is accepting
 			CheckResult result = n.isAccepting();
-			System.out.println("\n" + result);
-			if(result.value) {
-				// counterexample is feasible
-				
+			System.out.println(result);
+			// counterexample is feasible
+			if(result.value) {	
 				return false;
 			}
+			// counterexample is spurious
 			else {
-				// spurious counterexample
+				// pick up all the nodes whose labels need to be strengthened
+				ArrayList<Node> nodesToBeStrengthened = new ArrayList<Node>();
+				Node current = n;
+				for(int i = 0; i < result.interpolants.size(); i++) {
+					nodesToBeStrengthened.add(0, current);
+					current = (current.fatherEdge == null ? null : current.fatherEdge.left);
+				}
+				// strengthen the labels
+				boolean b = false;
+				for(int i = 0; i < result.interpolants.size(); i++) {
+					Node ni = nodesToBeStrengthened.get(i);
+					BooleanFormula label = ni.label;
+					BooleanFormula interpolant = result.interpolants.get(i);
+					if(!implicationIsValid(label, interpolant)) {
+						// remove all the out-coverage (covers others)
+						for(int j = 0; j < Covering.size(); j++) {
+							if(Covering.get(j).num == ni.num) {
+								Covered.remove(j);
+								Covering.remove(j);
+								j--;
+							}
+						}
+						// make conjunction of label and interpolant
+						ni.label = and(label, interpolant);
+						System.out.println("# Label of [Node " + ni.num + "] strenghthened: " + label + " -> " + ni.label);
+						// close if needed
+						if(!b)
+							b = ni.close(N, Covered, Covering);
+					}
+				}
 			}
+			// expand node
+			if(!n.isCovered(Covered)) {
+				for(int i = 0; i < SIGMA.size(); i++) {
+					String a = SIGMA.get(i);
+					Node s = new Node();
+					Edge e = new Edge();
+					e.left = n;
+					e.symbol = a;
+					e.right = s;
+					e.thetaLeft = new ArrayList<BooleanFormula>(n.R);
+					e.thetaRight = new ArrayList<BooleanFormula>();
+					Set<BooleanFormula> tempR = new HashSet<BooleanFormula>();
+					for(int j = 0; j < e.thetaLeft.size(); j++) {
+						String temp = a + " " + e.thetaLeft.get(j);
+						BooleanFormula right = DELTA.get(temp);
+						if(right == null) {
+							e.thetaLeft.remove(j);
+							j--;
+						}
+						else {
+							e.thetaRight.add(right);
+							ArrayList<BooleanFormula> freeBooleanVariablesRight = getFreeBooleanVariables(right);
+							for(int k = 0; k < freeBooleanVariablesRight.size(); k++)
+								tempR.add(freeBooleanVariablesRight.get(k));
+						}
+					}
+					Iterator<BooleanFormula> iterator = tempR.iterator();
+					while(iterator.hasNext()) {
+						s.R.add(iterator.next());
+					}
+					if(e.thetaLeft.size() == 0)
+						continue;
+					E.add(e);
+					s.label = make_bool("true");
+					s.fatherEdge = e;
+					WorkList.add(s);
+				}
+			}
+			System.out.println();
 		}
 	    return true;
 	}
