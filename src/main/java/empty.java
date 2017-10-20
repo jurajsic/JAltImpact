@@ -1,5 +1,6 @@
 import java.io.IOException;
 
+import org.sosy_lab.common.NativeLibraries;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -21,9 +22,12 @@ public class empty {
 	  LogManager logger = BasicLogManager.create(config);
 	  ShutdownManager shutdown = ShutdownManager.create();
     
-	  ADA ada = new ADA(config, logger, shutdown, Solvers.SMTINTERPOL);
+	  //System.out.println(NativeLibraries.getNativeLibraryPath());
+	  
+	  ADA ada = new ADA(config, logger, shutdown, Solvers.MATHSAT5);
+	  //ADA ada = new ADA(config, logger, shutdown, Solvers.SMTINTERPOL);
 	  //ada.readFromFile("examples/array_simple.ada");
-	  ada.readFromFile("examples/array_simple.ada");
+	  ada.readFromFile("examples/example1.ada");
     
 	  long start = System.currentTimeMillis();
 	  
