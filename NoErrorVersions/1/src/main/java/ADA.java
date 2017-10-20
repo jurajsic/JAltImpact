@@ -56,6 +56,14 @@ public class ADA {
 	BooleanFormula make_bool(String v) {
 		return bmgr.makeVariable(v);
 	}
+	
+/**
+ * make a Boolean variable
+ * @param b : Boolean value
+ */
+	BooleanFormula make_bool(boolean b) {
+		return bmgr.makeBoolean(b);
+	}	
 
 /**
  * make an IMPLIES Boolean formula
@@ -246,8 +254,9 @@ public class ADA {
 		reader.readLine();
 		temp = reader.readLine();
 		String [] temp2 = temp.split(" ");
-		for(int i = 0; i < temp2.length; i++)
+		for(int i = 0; i < temp2.length; i++) {
 			Q.add(make_bool(temp2[i]));
+		}
 		// read initial state
 		reader.readLine();
 		reader.readLine();
@@ -535,9 +544,9 @@ public class ADA {
 		for(int i = 0; i < Q.size(); i++) {
 			if(!F.contains(Q.get(i))) {
 				if(finalImplications == null)
-					finalImplications = implies(Q.get(i), make_bool("false"));
+					finalImplications = implies(Q.get(i), make_bool(false));
 				else
-					finalImplications = and(finalImplications, implies(Q.get(i), make_bool("false")));
+					finalImplications = and(finalImplications, implies(Q.get(i), make_bool(false)));
 			}
 		}
 		// initialize
