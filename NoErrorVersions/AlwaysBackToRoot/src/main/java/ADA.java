@@ -160,7 +160,7 @@ public class ADA {
 	{
 		CheckResult result = new CheckResult();
 		InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation();
-		List<Set> temp = new ArrayList<Set>();
+		/*List<Set> temp = new ArrayList<Set>();
 		for(int i = 0; i < cb.size(); i++) {
 			Set<Object> temp2 = new HashSet();
 			Object temp3 = prover.push(cb.get(i));
@@ -170,11 +170,26 @@ public class ADA {
 		if(prover.isUnsat()) {
 			result.value = false;
 			result.interpolants = (ArrayList<BooleanFormula>) prover.getSeqInterpolants(temp);
+		}*/
+		List temp = new ArrayList();
+		for(int i = 0; i < cb.size(); i++) {
+			temp.add(prover.push(cb.get(i)));
+		}
+		if(prover.isUnsat()) {
+			for(int i = 0; i < temp.size() - 1; i++) {
+				List temp2 = new ArrayList();
+				for(int j = 0; j <= i; j++) {
+					temp2.add(temp.get(j));
+				}
+				result.interpolants.add(prover.getInterpolant(temp2));
+			}
+			result.value = false;
 		}
 		else {
 			result.value = true;
 			result.model = prover.getModel();
 		}
+		
 		prover.close();
 		return result;
 	}
@@ -632,7 +647,7 @@ public class ADA {
 						String temp = a + " " + e.thetaLeft.get(j);
 						BooleanFormula right = DELTA.get(temp);
 						if(right == null) {
-							e.thetaRight.add(make_bool("false"));
+							e.thetaRight.add(make_bool(false));
 						}
 						else {
 							e.thetaRight.add(right);
@@ -646,7 +661,7 @@ public class ADA {
 						s.R.add(iterator.next());
 					}
 					E.add(e);
-					s.label = make_bool("true");
+					s.label = make_bool(true);
 					s.fatherEdge = e;
 					WorkList.add(s);
 				}

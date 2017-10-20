@@ -24,14 +24,14 @@ public class empty {
     
 	  //System.out.println(NativeLibraries.getNativeLibraryPath());
 	  
-	  //ADA ada = new ADA(config, logger, shutdown, Solvers.MATHSAT5);
-	  ADA ada = new ADA(config, logger, shutdown, Solvers.SMTINTERPOL);
-	  ada.readFromFile("examples/train.ada");
+	  ADA ada = new ADA(config, logger, shutdown, Solvers.MATHSAT5);
+	  //ADA ada = new ADA(config, logger, shutdown, Solvers.SMTINTERPOL);
+	  ada.readFromFile("examples/array_simple.ada");
 	  //ada.readFromFile("examples/example1.ada");
     
 	  long start = System.currentTimeMillis();
 	  
-	  if(ada.is_empty())
+	  if(ada.is_empty(23))
 		  System.out.println("-----\nEMPTY\n-----");
 	  else
 		  System.out.println("---------\nNOT EMPTY\n---------");

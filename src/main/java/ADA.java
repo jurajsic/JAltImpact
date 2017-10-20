@@ -474,19 +474,27 @@ public class ADA {
 			return label.toString();
 		}
 		
-		public CheckResult isAccepting() throws SolverException, InterruptedException {
+		public CheckResult isAccepting(int backStep) throws SolverException, InterruptedException {
 			// collect all edges along the path
 			ArrayList<Edge> edges = new ArrayList<Edge>();
-			for(Node current = this; current.label != i; current = current.fatherEdge.left) {
-				edges.add(0, current.fatherEdge);
+			Node current = this;
+			for(int i = 0; i < backStep; i++) {				
+				if(current.fatherEdge != null) {
+					edges.add(0, current.fatherEdge);
+					current = current.fatherEdge.left;
+				}
+				else {
+					break;
+				}
 			}
-			// add time-stamp to initial state
-			BooleanFormula iWithTimeStamp = addTimeStamp(i, 0);
+			Node pivot = current;
+			// add time-stamp to pivot state
+			BooleanFormula pivotWithTimeStamp = addTimeStamp(pivot.label, 0);
 			// add time-stamp to final implications
 			BooleanFormula finalImplicationsWithTimeStamp = addTimeStamp(finalImplications, edges.size());
 			// add time-stamp to edges and collect all the time-stamp-added formulae
 			ArrayList<BooleanFormula> formulaGroup = new ArrayList<BooleanFormula>();
-			formulaGroup.add(iWithTimeStamp);
+			formulaGroup.add(pivotWithTimeStamp);
 			for(int i = 0; i < edges.size(); i++) {
 				BooleanFormula thetaLeftWithTimeStamp = addTimeStamp(edges.get(i).thetaLeft.get(0), i);
 				BooleanFormula thetaRightWithTimeStamp = addTimeStamp(edges.get(i).thetaRight.get(0), i + 1);
@@ -500,7 +508,7 @@ public class ADA {
 			}
 			formulaGroup.add(finalImplicationsWithTimeStamp);
 			// check satisfiability of the conjunction
-			System.out.println(formulaGroup);
+			//System.out.println(formulaGroup);
 			CheckResult result = checkConjunctionSatisfiability(formulaGroup);
 			// remove time-stamps from the interpolants
 			for(int i = 0; i < result.interpolants.size(); i++) {
@@ -551,7 +559,7 @@ public class ADA {
 	}
 
 /** check if the ADA is empty */
-	public boolean is_empty()
+	public boolean is_empty(int backStep)
 			throws
 			IOException, SolverException, InterruptedException
 	{
@@ -587,13 +595,15 @@ public class ADA {
 			// dequeue n from WorkList
 			Node n = WorkList.get(0);
 			WorkList.remove(0);
+			/*Node n = WorkList.get(WorkList.size() - 1);
+			WorkList.remove(WorkList.size() - 1);*/
 			// add n into N
 			N.add(n);
 			n.num = nodeCounter++;
-			System.out.println("Current [Node " + n.num + "] : " + n);
+			//System.out.println("Current [Node " + n.num + "] : " + n);
 			// check whether n is accepting
-			CheckResult result = n.isAccepting();
-			System.out.println(result);
+			CheckResult result = n.isAccepting(backStep);
+			//System.out.println(result);
 			// counterexample is feasible
 			if(result.value) {	
 				return false;
@@ -624,7 +634,7 @@ public class ADA {
 						}
 						// make conjunction of label and interpolant
 						ni.label = and(label, interpolant);
-						System.out.println("# Label of [Node " + ni.num + "] strenghthened: " + label + " -> " + ni.label);
+						//System.out.println("# Label of [Node " + ni.num + "] strenghthened: " + label + " -> " + ni.label);
 						// close if needed
 						if(!b)
 							b = ni.close(N, Covered, Covering);
