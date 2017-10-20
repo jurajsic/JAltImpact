@@ -647,7 +647,7 @@ public class ADA {
 						String temp = a + " " + e.thetaLeft.get(j);
 						BooleanFormula right = DELTA.get(temp);
 						if(right == null) {
-							e.thetaRight.add(make_bool("false"));
+							e.thetaRight.add(make_bool(false));
 						}
 						else {
 							e.thetaRight.add(right);
@@ -661,7 +661,7 @@ public class ADA {
 						s.R.add(iterator.next());
 					}
 					E.add(e);
-					s.label = make_bool("true");
+					s.label = make_bool(true);
 					s.fatherEdge = e;
 					WorkList.add(s);
 				}

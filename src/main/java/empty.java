@@ -26,8 +26,8 @@ public class empty {
 	  
 	  //ADA ada = new ADA(config, logger, shutdown, Solvers.MATHSAT5);
 	  ADA ada = new ADA(config, logger, shutdown, Solvers.SMTINTERPOL);
-	  //ada.readFromFile("examples/array_simple.ada");
-	  ada.readFromFile("examples/array_simple.ada");
+	  ada.readFromFile("examples/train.ada");
+	  //ada.readFromFile("examples/example1.ada");
     
 	  long start = System.currentTimeMillis();
 	  
