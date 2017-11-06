@@ -1,8 +1,12 @@
 # JAltImpact
 
 ## Author
-###### Xiao XU
-###### xiao.xu.cathiec@gmail.com
+Xiao XU(xiao.xu.cathiec@gmail.com)
+
+## Before run it
+1. Install [JavaSMT](https://github.com/sosy-lab/java-smt).
+2. Install [corresponding solvers](https://github.com/sosy-lab/java-smt/blob/master/README.md#installation).
+
 
 
 ## How to run it
