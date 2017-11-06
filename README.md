@@ -6,5 +6,5 @@
 
 
 ## How to run it
-** You have to run it from Eclipse **
+**You have to run it from Eclipse**
 qq
