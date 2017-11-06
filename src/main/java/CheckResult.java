@@ -1,5 +1,3 @@
-package cathiec.JAltImpact;
-
 import java.util.ArrayList;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -21,7 +19,7 @@ public class CheckResult {
 		if(!value)
 			return "$ Non-Accepting @ Interpolants :\n$ " + interpolants.toString();
 		else
-			return "$ Accepting @ Model :\n$" + ( model == null ? "[Empty Model]" : model.toString());
+			return "$ Accepting @ Model :\n" + ( model == null ? "[Empty Model]" : model.toString());
 	}
 	
 }

@@ -1,5 +1,3 @@
-package cathiec.JAltImpact;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -592,8 +590,7 @@ public class ADA {
 		
 		// start
 		int nodeCounter = 0;
-		while(!WorkList.isEmpty())
-		{
+		while(!WorkList.isEmpty()) {
 			// dequeue n from WorkList
 			Node n = WorkList.get(0);
 			WorkList.remove(0);
@@ -605,9 +602,9 @@ public class ADA {
 			//System.out.println("Current [Node " + n.num + "] : " + n);
 			// check whether n is accepting
 			CheckResult result = n.isAccepting(backStep);
-			//System.out.println(result);
 			// counterexample is feasible
-			if(result.value) {	
+			if(result.value) {
+				System.out.println(result);
 				return false;
 			}
 			// counterexample is spurious
@@ -678,7 +675,7 @@ public class ADA {
 					WorkList.add(s);
 				}
 			}
-			System.out.println();
+			//System.out.println();
 		}
 	    return true;
 	}
