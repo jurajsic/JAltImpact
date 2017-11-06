@@ -11,3 +11,4 @@ Xiao XU(xiao.xu.cathiec@gmail.com)
 5. Add **existing Maven project**, choose "[pom.xml](https://github.com/cathiec/JAltImpact/blob/master/pom.xml)".
 
 ## How to run it (with [Eclipse](http://www.eclipse.org/downloads/))
+The main function is in "[src/main/java/empty.java]()".
