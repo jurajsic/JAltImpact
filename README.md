@@ -17,7 +17,7 @@ It takes 3 arguments:
 * **args[1]** (default: MATHSAT5) the solver
 * **args[2]** (default: always back to the root) back-steps number when checking whether a node is accepting
 > Using a smaller **back-steps number** can accelerate the program, but the correctness of result cannot be ensured in some cases.
->> * In the case of *Not Empty*, it is safe to use a smaller **back-steps number** to find counter example.
+>> * In the case of *Not Empty*, it is safe to use a smaller **back-steps number** to compute counter examples.
 >> * In the case of *Empty*, it is safe to use a smaller **back-steps number** to prove the emptiness.
 
 Example of arguments:
