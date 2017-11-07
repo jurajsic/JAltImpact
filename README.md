@@ -15,7 +15,8 @@ The main function is in "[src/main/java/empty.java](https://github.com/cathiec/J
 It takes 3 arguments:
 * **args[0]** (necessary) the input file
 * **args[1]** (default: MATHSAT5) the solver
-* **args[2]** (default: always back to the root) the number of back steps when checking whether a node is accepting
+* **args[2]** (default: always back to the root) back-steps number when checking whether a node is accepting
+>Attention: Using a smaller **back-steps number** can accelerate the program, but the correctness of result cannot be ensured.
 
 Example of arguments:
 ```
