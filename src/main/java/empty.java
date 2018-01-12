@@ -1,5 +1,6 @@
 import java.io.IOException;
 
+import org.sosy_lab.common.NativeLibraries;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -65,7 +66,7 @@ public class empty {
     
 	  long start = System.currentTimeMillis();
 	  
-	  if(ada.is_empty(backStep))
+	  if(ada.is_empty(backStep, true))
 		  System.out.println("-----\nEMPTY\n-----");
 	  else
 		  System.out.println("---------\nNOT EMPTY\n---------");

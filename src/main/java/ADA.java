@@ -559,7 +559,7 @@ public class ADA {
 	}
 
 /** check if the ADA is empty */
-	public boolean is_empty(int backStep)
+	public boolean is_empty(int backStep, Boolean printResult)
 			throws
 			IOException, SolverException, InterruptedException
 	{
@@ -604,7 +604,9 @@ public class ADA {
 			CheckResult result = n.isAccepting(backStep);
 			// counterexample is feasible
 			if(result.value) {
-				System.out.println(result);
+				if(printResult) {
+					System.out.println(result);
+				}
 				return false;
 			}
 			// counterexample is spurious
