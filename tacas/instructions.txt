@@ -1,0 +1,14 @@
+JAltImpact is a tool for checking the emptiness of alternating data automata. It is based on JavaSMT.
+----------
+Run:
+	sudo bash replicate
+to see the replication of the results of AltImpact algorithm (except examples/array_rotation2.ada which leads a timeout).
+----------
+For its normal use, just run:
+	java -jar empty.jar inputfile.ada
+Where you replace "inputfile.ada" by the path of your input file.
+* The default solver is MATHSAT5, in some cases, other solvers such as SMTINTERPOL can perform better.
+
+See
+	https://github.com/cathiec/JAltImpact
+for more details.

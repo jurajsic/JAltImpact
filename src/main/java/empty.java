@@ -62,7 +62,7 @@ public class empty {
 	  if(args.length == 3)
 		  System.out.println("# Back Step:\t" + backStep);
 	  
-	  System.out.println("# Start checking temptiness...\n");
+	  System.out.println("# Start checking emptiness...\n");
     
 	  long start = System.currentTimeMillis();
 	  

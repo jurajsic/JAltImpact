@@ -1,0 +1,51 @@
+#!/bin/bash
+java -jar empty.jar examples/simple1.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/simple2.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/simple3.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/array_shift.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/array_simple.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/array_rotation1.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/abp.ada -SMTINTERPOL
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/train.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/hw1.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
+java -jar empty.jar examples/hw2.ada
+echo
+echo
+echo "Press anykey to continue..."
+read
