@@ -1,3 +1,25 @@
+/*
+	JAltImpact
+    Copyright (C) 2017  Xiao XU & Radu IOSIF
+
+	This file is part of JAltImpact.
+
+    JAltImpact is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    
+    If you have any questions, please contact Xiao XU <xiao.xu.cathiec@gmail.com>.
+*/
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -190,7 +212,7 @@ public class ADA {
 			result.model = prover.getModel();
 		}
 		
-		prover.close();
+		//prover.close();
 		return result;
 	}
 	
@@ -478,7 +500,7 @@ public class ADA {
 			// collect all edges along the path
 			ArrayList<Edge> edges = new ArrayList<Edge>();
 			Node current = this;
-			for(int i = 0; i < backStep; i++) {				
+			for(int i = 0; i < backStep; i++) {
 				if(current.fatherEdge != null) {
 					edges.add(0, current.fatherEdge);
 					current = current.fatherEdge.left;
@@ -559,7 +581,7 @@ public class ADA {
 	}
 
 /** check if the ADA is empty */
-	public boolean is_empty(int backStep, Boolean printResult)
+	public boolean is_empty(int backStep, Boolean printResult, int mode)
 			throws
 			IOException, SolverException, InterruptedException
 	{
@@ -592,10 +614,15 @@ public class ADA {
 		int nodeCounter = 0;
 		while(!WorkList.isEmpty()) {
 			// dequeue n from WorkList
-			Node n = WorkList.get(0);
-			WorkList.remove(0);
-			/*Node n = WorkList.get(WorkList.size() - 1);
-			WorkList.remove(WorkList.size() - 1);*/
+			Node n = null;
+			if(mode == 1) {
+				n = WorkList.get(0);
+				WorkList.remove(0);
+			}
+			else if(mode == 2) {
+				n = WorkList.get(WorkList.size() - 1);
+				WorkList.remove(WorkList.size() - 1);
+			}
 			// add n into N
 			N.add(n);
 			n.num = nodeCounter++;
@@ -681,4 +708,5 @@ public class ADA {
 		}
 	    return true;
 	}
+
 }

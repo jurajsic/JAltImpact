@@ -1,3 +1,25 @@
+/*
+	JAltImpact
+    Copyright (C) 2017  Xiao XU & Radu IOSIF
+
+	This file is part of JAltImpact.
+
+    JAltImpact is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    
+    If you have any questions, please contact Xiao XU <xiao.xu.cathiec@gmail.com>.
+*/
+
 import java.io.IOException;
 
 import org.sosy_lab.common.NativeLibraries;
@@ -27,6 +49,7 @@ public class empty {
 	  Solvers solver = Solvers.MATHSAT5;
 	  String inputFile = null;
 	  int backStep = 1000;
+	  int mode = 1;
 	  
 	  if(args.length == 0) {
 		  System.out.println("# Error : No input file.");
@@ -48,7 +71,17 @@ public class empty {
 				  return;
 			  }
 			  if(args.length >= 3) {
-				  backStep = Integer.parseInt(args[2].substring(1));
+				  if(args[2].equals("-mode1"))
+					  mode = 1;
+				  else if(args[2].equals("-mode2"))
+					  mode = 2;
+				  else {
+					  System.out.println("# Error : Selected mode is not supported.");
+					  return;
+				  }
+				  if(args.length >= 4) {
+					  backStep = Integer.parseInt(args[3].substring(1));
+				  }
 			  }
 		  }
 	  }
@@ -59,20 +92,22 @@ public class empty {
 	  System.out.println("# Input File:\t" + inputFile);
 	  if(args.length >= 2)
 		  System.out.println("# Solver:\t" + solver);
-	  if(args.length == 3)
+	  if(args.length >= 3)
+		  System.out.println("# Mode:\t" + mode);
+	  if(args.length >= 4)
 		  System.out.println("# Back Step:\t" + backStep);
 	  
 	  System.out.println("# Start checking emptiness...\n");
     
 	  long start = System.currentTimeMillis();
 	  
-	  if(ada.is_empty(backStep, true))
+	  if(ada.is_empty(backStep, true, mode))
 		  System.out.println("-----\nEMPTY\n-----");
 	  else
 		  System.out.println("---------\nNOT EMPTY\n---------");
 	  
 	  long end = System.currentTimeMillis();
-	  System.out.printf("\n# Time Cost (ms): %s", String.valueOf(end - start));
+	  System.out.printf("\n# Time Cost (ms): %s\n", String.valueOf(end - start));
   }
   
 }

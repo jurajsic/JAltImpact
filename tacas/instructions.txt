@@ -1,14 +1,56 @@
+------------------------------
+Replication of the Results
+   for algorithm 2 (IMPACT)
+------------------------------
+# Run following command to see the replication of the results of AltImpact algorithm in the paper (< examples/array_rotation2.ada > is missing in the replication script because it leads a timeout)
+
+	bash replicate
+
+
+
+------------------------------
+Replication of the Results
+   for INCLUDER
+------------------------------
+# Download INCLUDER from
+
+	http://www.fit.vutbr.cz/research/groups/verifit/tools/includer/trace_inclusion.zip
+
+# Install and test INCLUDER by following the instructions on the website
+
+	http://www.fit.vutbr.cz/research/groups/verifit/tools/includer/
+
+# Run following examples to see the replication of the results of INCLUDER in the paper (each example in INCLUDER refers to an example in the paper)
+
+	< simple-examples/example-simple1.c > refers to < simple1 >
+	< simple-examples/example-simple2.c > refers to < simple2 >
+	< simple-examples/example-simple3.c > refers to < simple3 >
+	< arrays/example-array-shifting.c > refers to < array_shift >
+	< arrays/filip-simple.c > refers to < array_simple >
+	< arrays/array-rotation-radu.c > refers to < array_rotation1 >
+	< arrays/filip-rotation.c > refers to < array_rotation2 >
+	< protocols/example-abp-error.c > refers to < abp >
+	< timed-automata/example-rr-crossing.c > refers to < train >
+	< hw-examples/example-simple-hw-counter.c > refers to < hw1 >
+	< hw-examples/example-hw-counter.c > refers to < hw2 >
+
+
+
+----------
+JAltImpact
+----------
 JAltImpact is a tool for checking the emptiness of alternating data automata. It is based on JavaSMT.
-----------
-Run:
-	sudo bash replicate
-to see the replication of the results of AltImpact algorithm (except examples/array_rotation2.ada which leads a timeout).
-----------
+
 For its normal use, just run:
-	java -jar empty.jar inputfile.ada
-Where you replace "inputfile.ada" by the path of your input file.
+
+	java -jar JAltImact.jar inputfile.ada
+
+where you replace "inputfile.ada" by the path of your input file.
+
 * The default solver is MATHSAT5, in some cases, other solvers such as SMTINTERPOL can perform better.
 
 See
+
 	https://github.com/cathiec/JAltImpact
+
 for more details.
