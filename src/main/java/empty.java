@@ -86,28 +86,34 @@ public class empty {
 		  }
 	  }
 	  
-	  ADA ada = new ADA(config, logger, shutdown, solver);
-	  ada.readFromFile(inputFile);
-	  
-	  System.out.println("# Input File:\t" + inputFile);
-	  if(args.length >= 2)
-		  System.out.println("# Solver:\t" + solver);
-	  if(args.length >= 3)
-		  System.out.println("# Mode:\t" + mode);
-	  if(args.length >= 4)
-		  System.out.println("# Back Step:\t" + backStep);
-	  
-	  System.out.println("# Start checking emptiness...\n");
-    
-	  long start = System.currentTimeMillis();
-	  
-	  if(ada.is_empty(backStep, true, mode))
-		  System.out.println("-----\nEMPTY\n-----");
-	  else
-		  System.out.println("---------\nNOT EMPTY\n---------");
-	  
-	  long end = System.currentTimeMillis();
-	  System.out.printf("\n# Time Cost (ms): %s\n", String.valueOf(end - start));
+	  if(inputFile.charAt(inputFile.length() - 2) == 'd') {
+		  ADA ada = new ADA(config, logger, shutdown, solver);
+		  ada.readFromFile(inputFile);
+		  
+		  System.out.println("# Input File:\t" + inputFile);
+		  if(args.length >= 2)
+			  System.out.println("# Solver:\t" + solver);
+		  if(args.length >= 3)
+			  System.out.println("# Mode:\t" + mode);
+		  if(args.length >= 4)
+			  System.out.println("# Back Step:\t" + backStep);
+		  
+		  System.out.println("# Start checking emptiness...\n");
+	    
+		  long start = System.currentTimeMillis();
+		  
+		  if(ada.is_empty(backStep, true, mode))
+			  System.out.println("-----\nEMPTY\n-----");
+		  else
+			  System.out.println("---------\nNOT EMPTY\n---------");
+		  
+		  long end = System.currentTimeMillis();
+		  System.out.printf("\n# Time Cost (ms): %s\n", String.valueOf(end - start));
+	  }
+	  else if(inputFile.charAt(inputFile.length() - 2) == 'p') {
+		  PA pa = new PA(config, logger, shutdown, solver);
+		  pa.readFromFile(inputFile);
+	  }
   }
   
 }
