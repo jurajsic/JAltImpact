@@ -391,7 +391,7 @@ public class PA {
 		}
 		temp = temp.replaceAll("\\s*", "");
 		i = parse(temp);
-		System.out.println("start: " + i);
+		//System.out.println("start: " + i);
 		// read final states
 		reader.readLine();
 		reader.read(char_7,  0, 7);
@@ -408,16 +408,59 @@ public class PA {
 		temp = temp.replaceAll("\\s*", "");
 		if(!temp.equals("none")) {
 			F = temp.split(",");
-			System.out.print("final: ");
+			/*System.out.print("final: ");
 			for(int i = 0; i < F.length - 1; i++)
 				System.out.print(F[i] + ", ");
-			System.out.println(F[F.length - 1]);
+			System.out.println(F[F.length - 1]);*/
 		}
 		else {
 			F = new String[0];
-			System.out.print("final: none");
+			//System.out.println("final: none");
 		}
 		// read transitions
+		temp = "";
+		int EOF;
+		do {
+			EOF = reader.read();
+			c = (char)EOF;
+			temp = temp + c;
+			if(c == '.') {
+				temp = temp.replaceAll("\\s*", "");
+				String[] part = temp.split("--");
+				// left part of the transition
+				String left = part[0];
+				String[] tempSplit = part[1].split(":");
+				// data read during the transition
+				char data = tempSplit[tempSplit.length - 1].split("->")[0].charAt(0);
+				temp = part[1].split("->")[0];
+				int indexLastTwoPoints;
+				for(indexLastTwoPoints = temp.length() - 1; indexLastTwoPoints >= 0; indexLastTwoPoints--) {
+					if(temp.charAt(indexLastTwoPoints) == ':') {
+						break;
+					}
+				}
+				// symbol
+				String symbol = temp.substring(1, indexLastTwoPoints);
+				// right part of the transition
+				String right = part[1].split("->")[1].replace(".", "");
+				BooleanFormula implication = implies(parse(left), parse(right));
+				Map<IntegerFormula, IntegerFormula> fromToMapping = new HashMap<IntegerFormula, IntegerFormula>();
+				if(data == 'i') {
+					fromToMapping.put(make_int("i"), make_int("newValue"));
+				}
+				else if(data == 'j') {
+					fromToMapping.put(make_int("i"), make_int("oldValue"));
+					fromToMapping.put(make_int("j"), make_int("newValue"));
+				}
+				else {
+					System.out.println("# Error : Wrong format when reading transitions.");
+					reader.close();
+					return;
+				}
+				implication = fmgr.substitute(implication, fromToMapping);
+				temp = "";
+			}
+		} while(EOF != -1);
 
 		reader.close();
 	}
