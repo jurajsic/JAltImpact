@@ -206,6 +206,9 @@ public class PA {
 
 	// array of (strings of) final states
 	String[] F;
+	
+	// transition rules
+	Map<String, BooleanFormula> DELTA;
 
 	/**
 	 * parse a formula
@@ -250,45 +253,27 @@ public class PA {
 				}
 				else if(f.charAt(i) == '(') {
 					i++;
-					List<Formula> arguments = new ArrayList<Formula>();
 					String temp = "";
 					while(f.charAt(i) != ')') {
 						char c = f.charAt(i);
-						if(c != ',') {
-							temp = temp + c;
-						}
-						else {
-							arguments.add(make_int(temp));
-							temp = "";
-						}
+						temp = temp + c;
 						i++;
 					}
-					if(temp.length() > 0) {
-						arguments.add(make_int(temp));
-					}
-					if(arguments.size() == 0) {
-						BooleanFormula bf = make_bool(name);
-						if(i + 1 == f.length()) {
-							return bf;
-						}
-						else if(f.charAt(i + 1) == '/') {
-							return and(bf, parse(f.substring(i + 3, f.length())));
-						}
-						else if(f.charAt(i + 1) == '\\') {
-							return or(bf, parse(f.substring(i + 3, f.length())));
-						}
+					BooleanFormula bf = null;
+					if(temp.length() == 0) {
+						bf = ufmgr.declareAndCallUF(name, FormulaType.BooleanType, make_int("*"));
 					}
 					else {
-						BooleanFormula bf = ufmgr.declareAndCallUF(name, FormulaType.BooleanType, arguments);
-						if(i + 1 == f.length()) {
-							return bf;
-						}
-						else if(f.charAt(i + 1) == '/') {
-							return and(bf, parse(f.substring(i + 3, f.length())));
-						}
-						else if(f.charAt(i + 1) == '\\') {
-							return or(bf, parse(f.substring(i + 3, f.length())));
-						}
+						bf = ufmgr.declareAndCallUF(name, FormulaType.BooleanType, make_int(temp));
+					}
+					if(i + 1 == f.length()) {
+						return bf;
+					}
+					else if(f.charAt(i + 1) == '/') {
+						return and(bf, parse(f.substring(i + 3, f.length())));
+					}
+					else if(f.charAt(i + 1) == '\\') {
+						return or(bf, parse(f.substring(i + 3, f.length())));
 					}
 				}
 			}
@@ -418,6 +403,7 @@ public class PA {
 			//System.out.println("final: none");
 		}
 		// read transitions
+		DELTA = new HashMap<String, BooleanFormula>();
 		temp = "";
 		int EOF;
 		do {
@@ -427,11 +413,16 @@ public class PA {
 			if(c == '.') {
 				temp = temp.replaceAll("\\s*", "");
 				String[] part = temp.split("--");
-				// left part of the transition
-				String left = part[0];
-				String[] tempSplit = part[1].split(":");
-				// data read during the transition
-				char data = tempSplit[tempSplit.length - 1].split("->")[0].charAt(0);
+				// left part of the transition (only name / without arguments)
+				String leftWithArguments = part[0];
+				int indexLastLeftPar;
+				for(indexLastLeftPar = leftWithArguments.length() - 1; indexLastLeftPar >= 0; indexLastLeftPar--) {
+					if(leftWithArguments.charAt(indexLastLeftPar) == '(') {
+						break;
+					}
+				}
+				String left = leftWithArguments.substring(0, indexLastLeftPar);
+				// symbol
 				temp = part[1].split("->")[0];
 				int indexLastTwoPoints;
 				for(indexLastTwoPoints = temp.length() - 1; indexLastTwoPoints >= 0; indexLastTwoPoints--) {
@@ -439,25 +430,11 @@ public class PA {
 						break;
 					}
 				}
-				// symbol
 				String symbol = temp.substring(1, indexLastTwoPoints);
 				// right part of the transition
 				String right = part[1].split("->")[1].replace(".", "");
-				BooleanFormula implication = implies(parse(left), parse(right));
-				Map<IntegerFormula, IntegerFormula> fromToMapping = new HashMap<IntegerFormula, IntegerFormula>();
-				if(data == 'i') {
-					fromToMapping.put(make_int("i"), make_int("newValue"));
-				}
-				else if(data == 'j') {
-					fromToMapping.put(make_int("i"), make_int("oldValue"));
-					fromToMapping.put(make_int("j"), make_int("newValue"));
-				}
-				else {
-					System.out.println("# Error : Wrong format when reading transitions.");
-					reader.close();
-					return;
-				}
-				implication = fmgr.substitute(implication, fromToMapping);
+				BooleanFormula implication = implies(parse(leftWithArguments), parse(right));
+				DELTA.put(left + " " + symbol, implication);
 				temp = "";
 			}
 		} while(EOF != -1);
