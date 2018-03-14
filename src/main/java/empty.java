@@ -113,6 +113,21 @@ public class empty {
 	  else if(inputFile.charAt(inputFile.length() - 2) == 'p') {
 		  PA pa = new PA(config, logger, shutdown, solver);
 		  pa.readFromFile(inputFile);
+		  
+		  System.out.println("# Input File:\t" + inputFile);
+		  System.out.println("# Solver:\tMATHSAT5");
+		  
+		  System.out.println("# Start checking emptiness...\n");
+		    
+		  long start = System.currentTimeMillis();
+		  
+		  if(pa.is_empty(backStep, true, mode))
+			  System.out.println("-----\nEMPTY\n-----");
+		  else
+			  System.out.println("---------\nNOT EMPTY\n---------");
+		  
+		  long end = System.currentTimeMillis();
+		  System.out.printf("\n# Time Cost (ms): %s\n", String.valueOf(end - start));
 	  }
   }
   

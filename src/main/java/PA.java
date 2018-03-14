@@ -204,8 +204,8 @@ public class PA {
 	// initial state
 	BooleanFormula i;
 
-	// array of (strings of) final states
-	String[] F;
+	// set of (the name-strings of) final states
+	Set<String> F;
 	
 	// transition rules
 	Map<String, BooleanFormula> DELTA;
@@ -376,7 +376,6 @@ public class PA {
 		}
 		temp = temp.replaceAll("\\s*", "");
 		i = parse(temp);
-		//System.out.println("start: " + i);
 		// read final states
 		reader.readLine();
 		reader.read(char_7,  0, 7);
@@ -391,16 +390,13 @@ public class PA {
 			temp = temp + c;
 		}
 		temp = temp.replaceAll("\\s*", "");
+		F = new HashSet<String>();
+		String[] split = null;
 		if(!temp.equals("none")) {
-			F = temp.split(",");
-			/*System.out.print("final: ");
-			for(int i = 0; i < F.length - 1; i++)
-				System.out.print(F[i] + ", ");
-			System.out.println(F[F.length - 1]);*/
-		}
-		else {
-			F = new String[0];
-			//System.out.println("final: none");
+			split = temp.split(",");
+			for(int i = 0; i < split.length; i++) {
+				F.add(split[i]);
+			}
 		}
 		// read transitions
 		DELTA = new HashMap<String, BooleanFormula>();
@@ -438,8 +434,27 @@ public class PA {
 				temp = "";
 			}
 		} while(EOF != -1);
+		
+		/*System.out.println("start : " + i);
+		System.out.print("final : ");
+		for(String str : F) {
+			System.out.print(str + " ");
+		}
+		System.out.println();
+		for(Map.Entry<String, BooleanFormula> entry : DELTA.entrySet()) {
+			System.out.println(entry.getKey() + "   ->   " + entry.getValue());
+		}
+		System.out.println();*/
 
 		reader.close();
+	}
+	
+	public boolean is_empty(int backStep, Boolean printResult, int mode)
+			throws
+			IOException, SolverException, InterruptedException
+	{
+		
+		return true;
 	}
 
 }
