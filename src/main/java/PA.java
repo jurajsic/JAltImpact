@@ -23,7 +23,6 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,8 +45,6 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.FormulaType;
-import org.sosy_lab.java_smt.api.FunctionDeclaration;
-import org.sosy_lab.java_smt.api.FunctionDeclarationKind;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.InterpolatingProverEnvironment;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -56,7 +53,6 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 import org.sosy_lab.java_smt.api.UFManager;
-import org.sosy_lab.java_smt.basicimpl.FunctionDeclarationImpl;
 
 public class PA {
 	
@@ -207,13 +203,17 @@ public class PA {
 	// set of (the name-strings of) final states
 	Set<String> F;
 	
+	// set of symbols
+	Set<String> SIGMA;
+
 	// transition rules
 	Map<String, BooleanFormula> DELTA;
+	Map<String, String> READ;
 
-	/**
-	 * parse a formula
-	 * @param f : string to be parsed
-	 */
+/**
+ * parse a formula
+ * @param f : string to be parsed
+ */
 	BooleanFormula parse(String f) {
 		if(f.charAt(0) == '(') {
 			int count = 1;
@@ -349,10 +349,10 @@ public class PA {
 		return null;
 	}
 	
-	/**
-	 * parse a file to assign the PA
-	 * @param filename : name of source file
-	 */
+/**
+ * parse a file to assign the PA
+ * @param filename : name of source file
+ */
 	void readFromFile(String filename)
 			throws
 			IOException
@@ -400,6 +400,8 @@ public class PA {
 		}
 		// read transitions
 		DELTA = new HashMap<String, BooleanFormula>();
+		READ = new HashMap<String, String>();
+		SIGMA = new HashSet<String>();
 		temp = "";
 		int EOF;
 		do {
@@ -427,10 +429,12 @@ public class PA {
 					}
 				}
 				String symbol = temp.substring(1, indexLastTwoPoints);
+				String read = temp.substring(indexLastTwoPoints + 1, indexLastTwoPoints + 2);
+				SIGMA.add(symbol);
+				READ.put(left + " " + symbol, read);
 				// right part of the transition
 				String right = part[1].split("->")[1].replace(".", "");
-				BooleanFormula implication = implies(parse(leftWithArguments), parse(right));
-				DELTA.put(left + " " + symbol, implication);
+				DELTA.put(left + " " + symbol, parse(right));
 				temp = "";
 			}
 		} while(EOF != -1);
@@ -442,18 +446,398 @@ public class PA {
 		}
 		System.out.println();
 		for(Map.Entry<String, BooleanFormula> entry : DELTA.entrySet()) {
-			System.out.println(entry.getKey() + "   ->   " + entry.getValue());
+			System.out.println(entry.getKey() + "   ->   #" + READ.get(entry.getKey()) + "#   " + entry.getValue());
 		}
 		System.out.println();*/
 
 		reader.close();
 	}
 	
+	class Edge {
+		
+		Node from;
+		String symbol;
+		Node to;
+		List<BooleanFormula> thetaLeft;
+		List<BooleanFormula> thetaRight;
+		List<String> read;
+		
+		public Edge() {
+			from = null;
+			symbol = null;
+			to = null;
+			thetaLeft = new ArrayList<BooleanFormula>();
+			thetaRight = new ArrayList<BooleanFormula>();
+			read = new ArrayList<String>();
+		}
+		
+		public Edge(Edge e) {
+			from = e.from;
+			symbol = e.symbol;
+			to = e.to;
+			thetaLeft = new ArrayList<BooleanFormula>(e.thetaLeft);
+			thetaRight = new ArrayList<BooleanFormula>(e.thetaRight);
+			read = new ArrayList<String>(e.read);
+		}
+		
+	}
+
+/**
+ * given n Boolean formulae, check the satisfiability of the conjunction of these Boolean formulae
+ * if not satisfiable, then compute the interpolants (there will be n - 1 interpolants)
+ * @param cb : collection of n Boolean formulae
+ * @return [.value] whether the conjunction is satisfiable [.model] model proving satisfiability if satisfiable [.interpolants] collection of interpolants if not satisfiable
+ * @throws InterruptedException 
+ * @throws SolverException 
+ */
+	CheckResult checkConjunctionSatisfiability(ArrayList<BooleanFormula> cb)
+			throws
+			SolverException,
+			InterruptedException
+	{
+		CheckResult result = new CheckResult();
+		InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation();
+		List temp = new ArrayList();
+		for(int i = 0; i < cb.size(); i++) {
+			temp.add(prover.push(cb.get(i)));
+		}
+		if(prover.isUnsat()) {
+			for(int i = 0; i < temp.size() - 1; i++) {
+				List temp2 = new ArrayList();
+				for(int j = 0; j <= i; j++) {
+					temp2.add(temp.get(j));
+				}
+				result.interpolants.add(prover.getInterpolant(temp2));
+			}
+			result.value = false;
+		}
+		else {
+			result.value = true;
+			result.model = prover.getModel();
+		}
+		return result;
+	}
+
+	class Node {
+		
+		int num;
+		int step;
+		Edge fatherEdge;
+		BooleanFormula label;
+		List<BooleanFormula> R;
+		
+		public Node() {
+			num = -1;
+			step = -1;
+			fatherEdge = null;
+			label = null;
+			R = new ArrayList<BooleanFormula>();
+		}
+		
+		public Node(Node n) {
+			num = n.num;
+			step = n.step;
+			fatherEdge = n.fatherEdge;
+			label = n.label;
+			R = new ArrayList<BooleanFormula>(n.R);
+		}
+		
+		public String toString() {
+			return label.toString();
+		}
+		
+		public CheckResult isAccepting(int backStep) throws SolverException, InterruptedException {
+			// collect all edges along the path
+			ArrayList<Edge> edges = new ArrayList<Edge>();
+			Node current = this;
+			for(int i = 0; i < backStep; i++) {
+				if(current.fatherEdge != null) {
+					edges.add(0, current.fatherEdge);
+					current = current.fatherEdge.from;
+				}
+				else {
+					break;
+				}
+			}
+			Node pivot = current;
+			// add time-stamp to pivot state
+			BooleanFormula pivotWithTimeStamp = addTimeStamp(pivot.label, 0);
+			// add time-stamp to edges and collect all the time-stamp-added formulae
+			ArrayList<BooleanFormula> formulaGroup = new ArrayList<BooleanFormula>();
+			formulaGroup.add(pivotWithTimeStamp);
+			for(int i = 0; i < edges.size(); i++) {
+				BooleanFormula thetaLeftWithTimeStamp = addTimeStamp(edges.get(i).thetaLeft.get(0), i);
+				BooleanFormula thetaRightWithTimeStamp = addTimeStamp(edges.get(i).thetaRight.get(0), i + 1);
+				BooleanFormula thetaWithTimeStamp = implies(thetaLeftWithTimeStamp, thetaRightWithTimeStamp);				
+				for(int j = 1; j < edges.get(i).thetaLeft.size(); j++) {
+					thetaLeftWithTimeStamp = addTimeStamp(edges.get(i).thetaLeft.get(j), i);
+					thetaRightWithTimeStamp = addTimeStamp(edges.get(i).thetaRight.get(j), i + 1);
+					BooleanFormula implication = implies(thetaLeftWithTimeStamp, thetaRightWithTimeStamp);					
+					thetaWithTimeStamp = and(thetaWithTimeStamp, implication);
+				}
+				formulaGroup.add(thetaWithTimeStamp);
+			}
+			// add time-stamp to final implications
+			BooleanFormula finalImplications = make_bool(true);
+			BooleanFormula finalConjunctionOfThetaRight = pivot.label;
+			if(edges.size() > 0) {
+				int finalIndex = edges.size() - 1;
+				finalConjunctionOfThetaRight = edges.get(finalIndex).thetaRight.get(0);
+				for(int j = 1; j < edges.get(finalIndex).thetaLeft.size(); j++) {
+					finalConjunctionOfThetaRight = and(finalConjunctionOfThetaRight, edges.get(finalIndex).thetaRight.get(j));
+				}
+			}
+			Map<String, Formula> UFsWithNames = extractUFsWithNames(finalConjunctionOfThetaRight);
+			for(Entry<String, Formula> entry : UFsWithNames.entrySet()) {
+				if(!F.contains(entry.getKey())) {
+					finalImplications = and(finalImplications, implies((BooleanFormula)entry.getValue(), make_bool(false)));
+				}
+			}
+			BooleanFormula finalImplicationsWithTimeStamp = addTimeStamp(finalImplications, edges.size());
+			formulaGroup.add(finalImplicationsWithTimeStamp);
+			// check satisfiability of the conjunction
+			//System.out.println(formulaGroup);
+			CheckResult result = checkConjunctionSatisfiability(formulaGroup);
+			// remove time-stamps from the interpolants
+			for(int i = 0; i < result.interpolants.size(); i++) {
+				result.interpolants.set(i, removeTimeStamp(result.interpolants.get(i)));
+			}
+			return result;
+		}
+
+		public boolean isSuccessorOf(Node n) {
+			for(Node current = this; current != null; current = (current.fatherEdge == null ? null : current.fatherEdge.from)) {
+				if(current.num == n.num)
+					return true;
+			}
+			return false;
+		}
+		
+		public boolean close(ArrayList<Node> N, ArrayList<Node> Covered, ArrayList<Node> Covering)
+				throws
+				SolverException,
+				InterruptedException
+		{
+			for(int i = 0; i < num; i++) {
+				Node y = N.get(i);
+				if(implicationIsValid(label, y.label)) {
+					for(int j = 0; j < Covering.size(); j++) {
+						if(Covering.get(j).isSuccessorOf(this)) {
+							Covered.remove(j);
+							Covering.remove(j);
+							j--;
+						}
+					}
+					Covered.add(this);
+					Covering.add(y);
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		public boolean isCovered(ArrayList<Node> Covered) {
+			for(Node current = this; current != null; current = (current.fatherEdge == null ? null : current.fatherEdge.from)) {
+				if(Covered.contains(current))
+					return true;
+			}
+			return false;
+		}
+		
+	}
+	
+	public Map<String, Formula> extractUFsWithNames(Formula f) {
+		Map<String, Formula> result = new HashMap<String, Formula>();
+		Map<String, Formula> UFs = fmgr.extractVariablesAndUFs(f);
+		for(Entry<String, Formula> entry : UFs.entrySet()) {
+			if(fmgr.getFormulaType(entry.getValue()).isBooleanType()) {
+				result.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return result;
+	}
+	
+	public ArrayList<BooleanFormula> extractUFs(Formula f) {
+		ArrayList<BooleanFormula> result = new ArrayList<BooleanFormula>();
+		Map<String, Formula> UFs = fmgr.extractVariablesAndUFs(f);
+		for(Entry<String, Formula> entry : UFs.entrySet()) {
+			if(fmgr.getFormulaType(entry.getValue()).isBooleanType()) {
+				result.add((BooleanFormula)entry.getValue());
+			}
+		}
+		return result;
+	}
+	
+	public List<Formula> extractVariables(Formula f) {
+		List<Formula> result = new ArrayList<Formula>();
+		Map<String, Formula> UFs = fmgr.extractVariables(f);
+		for(Entry<String, Formula> entry : UFs.entrySet()) {
+			if(fmgr.getFormulaType(entry.getValue()).isIntegerType()) {
+				result.add(entry.getValue());
+			}
+		}
+		return result;
+	}
+
+/**
+ * add time-stamp to a Boolean formula
+ * @param original : original Boolean formula
+ * @param stamp : time-stamp to be added
+ */
+	BooleanFormula addTimeStamp(BooleanFormula original, int stamp) {
+		Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+		Map<String, Formula> UFsWithNames = extractUFsWithNames(original);
+		for(Entry<String, Formula> entry : UFsWithNames.entrySet()) {
+			List<Formula> pArgs = extractVariables(entry.getValue());
+			fromToMapping.put(entry.getValue(), ufmgr.declareAndCallUF(entry.getKey() + '_' + stamp, FormulaType.BooleanType, pArgs));
+		}
+		return fmgr.substitute(original, fromToMapping);
+	}
+	
+/**
+ * remove time-stamp from a Boolean formula
+ * @param original : original Boolean formula
+ */
+	BooleanFormula removeTimeStamp(BooleanFormula original) {
+		Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+		Map<String, Formula> UFsWithNames = extractUFsWithNames(original);
+		for(Entry<String, Formula> entry : UFsWithNames.entrySet()) {
+			List<Formula> pArgs = extractVariables(entry.getValue());
+			String name = entry.getKey();
+			int i;
+			for(i = name.length() - 1; i >= 0; i--) {
+				if(name.charAt(i) == '_')
+					break;
+			}
+			name = name.substring(0, i);
+			fromToMapping.put(entry.getValue(), ufmgr.declareAndCallUF(name, FormulaType.BooleanType, pArgs));
+		}
+		return fmgr.substitute(original, fromToMapping);
+	}
+
+/** check if the PA is empty */
 	public boolean is_empty(int backStep, Boolean printResult, int mode)
 			throws
 			IOException, SolverException, InterruptedException
 	{
+		//System.out.println(DELTA);
+		//initialize
+		ArrayList<Node> N = new ArrayList<Node>();
+		ArrayList<Edge> E = new ArrayList<Edge>();
+		ArrayList<Node> workList = new ArrayList<Node>();
+		ArrayList<Node> covered = new ArrayList<Node>();
+		ArrayList<Node> covering = new ArrayList<Node>();
+		Node r = new Node();
+		r.label = i;
+		r.step = 0;
+		r.R = extractUFs(i);
+		workList.add(r);
 		
+		//start
+		int nodeCounter = 0;
+		while(!workList.isEmpty()) {
+			//dequeue n from workList
+			Node n = null;
+			if(mode == 1) {
+				n = workList.get(0);
+				workList.remove(0);
+			}
+			else {
+				n = workList.get(workList.size() - 1);
+				workList.remove(workList.size() - 1);
+			}
+			//add n into N
+			N.add(n);
+			n.num = nodeCounter++;
+			System.out.println("Current : [ Node " + n.num + " ] : " + n);
+			//check whether n is accepting
+			CheckResult result = n.isAccepting(backStep);
+			//counter-example is feasible
+			if(result.value) {
+				if(printResult) {
+					System.out.println(result);
+				}
+				return false;
+			}
+			// counterexample is spurious
+			else {
+				// pick up all the nodes whose labels need to be strengthened
+				ArrayList<Node> nodesToBeStrengthened = new ArrayList<Node>();
+				Node current = n;
+				//System.out.println(result.interpolants);
+				for(int i = 0; i < result.interpolants.size(); i++) {
+					nodesToBeStrengthened.add(0, current);
+					current = (current.fatherEdge == null ? null : current.fatherEdge.from);
+				}
+				// strengthen the labels
+				boolean b = false;
+				for(int i = 0; i < result.interpolants.size(); i++) {
+					Node ni = nodesToBeStrengthened.get(i);
+					BooleanFormula label = ni.label;
+					BooleanFormula interpolant = result.interpolants.get(i);
+					if(!implicationIsValid(label, interpolant)) {
+						// remove all the out-coverage (covers others)
+						for(int j = 0; j < covering.size(); j++) {
+							if(covering.get(j).num == ni.num) {
+								covered.remove(j);
+								covering.remove(j);
+								j--;
+							}
+						}
+						// make conjunction of label and interpolant
+						ni.label = and(label, interpolant);
+						System.out.println("# Label of [Node " + ni.num + "] strenghthened: " + label + " -> " + ni.label);
+						// close if needed
+						if(!b)
+							b = ni.close(N, covered, covering);
+					}
+				}
+			}
+			// expand node
+			if(!n.isCovered(covered)) {
+				for(String a : SIGMA) {
+					Node s = new Node();
+					s.step = n.step + 1;
+					Edge e = new Edge();
+					e.from = n;
+					e.symbol = a;
+					e.to = s;
+					e.thetaLeft = new ArrayList<BooleanFormula>(n.R);
+					e.thetaRight = new ArrayList<BooleanFormula>();
+					Set<BooleanFormula> tempR = new HashSet<BooleanFormula>();
+					for(int j = 0; j < e.thetaLeft.size(); j++) {
+						String name = null;
+						for(String x : extractUFsWithNames(e.thetaLeft.get(j)).keySet()) {
+							name = x;
+						}
+						String temp = name + " " + a;
+						//System.out.println(temp);
+						BooleanFormula right = DELTA.get(temp);
+						if(right == null) {
+							e.thetaRight.add(make_bool(false));
+							e.read.add("i");
+						}
+						else {
+							e.thetaRight.add(right);
+							e.read.add(READ.get(temp));
+							ArrayList<BooleanFormula> freeBooleanVariablesRight = extractUFs(right);
+							for(int k = 0; k < freeBooleanVariablesRight.size(); k++)
+								tempR.add(freeBooleanVariablesRight.get(k));
+						}
+					}
+					Iterator<BooleanFormula> iterator = tempR.iterator();
+					while(iterator.hasNext()) {
+						s.R.add(iterator.next());
+					}
+					E.add(e);
+					s.label = make_bool(true);
+					s.fatherEdge = e;
+					//System.out.println("Add : " + e.from + " - " + e.symbol + " ->" + e.to + "   " + e.thetaLeft + "   " + e.thetaRight);
+					workList.add(s);
+				}
+			}
+			System.out.println();
+		}
 		return true;
 	}
 
