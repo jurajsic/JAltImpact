@@ -575,6 +575,7 @@ public class PA {
 					BooleanFormula implication = implies(thetaLeftWithTimeStamp, thetaRightWithTimeStamp);					
 					thetaWithTimeStamp = and(thetaWithTimeStamp, implication);
 				}
+				//System.out.println(thetaWithTimeStamp);
 				formulaGroup.add(thetaWithTimeStamp);
 			}
 			// add time-stamp to final implications
@@ -583,8 +584,14 @@ public class PA {
 			if(edges.size() > 0) {
 				int finalIndex = edges.size() - 1;
 				finalConjunctionOfThetaRight = edges.get(finalIndex).thetaRight.get(0);
+				if(implicationIsValid(finalConjunctionOfThetaRight, make_bool(false))) {
+					finalConjunctionOfThetaRight = make_bool(true);
+				}
 				for(int j = 1; j < edges.get(finalIndex).thetaLeft.size(); j++) {
-					finalConjunctionOfThetaRight = and(finalConjunctionOfThetaRight, edges.get(finalIndex).thetaRight.get(j));
+					BooleanFormula temp = edges.get(finalIndex).thetaRight.get(j);
+					if(!implicationIsValid(temp, make_bool(false))) {
+						finalConjunctionOfThetaRight = and(finalConjunctionOfThetaRight, temp);
+					}
 				}
 			}
 			Map<String, Formula> UFsWithNames = extractUFsWithNames(finalConjunctionOfThetaRight);
@@ -755,6 +762,11 @@ public class PA {
 			//counter-example is feasible
 			if(result.value) {
 				if(printResult) {
+					List<String> word = new ArrayList<String>();
+					for(Node c = n; c.fatherEdge != null; c = c.fatherEdge.from) {
+						word.add(0, c.fatherEdge.symbol);
+					}
+					System.out.print(word);
 					System.out.println(result);
 				}
 				return false;
@@ -818,8 +830,21 @@ public class PA {
 							e.read.add("i");
 						}
 						else {
+							String read = READ.get(temp);
+							if(read.equals("i")) {
+								Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+								fromToMapping.put(make_int("i"), make_int("x_" + s.step));
+								right = fmgr.substitute(right, fromToMapping);
+							}
+							else {
+								String variableName = extractVariables(e.thetaLeft.get(j)).get(0).toString();
+								Map<Formula, Formula> fromToMapping = new HashMap<Formula, Formula>();
+								fromToMapping.put(make_int("i"), make_int(variableName));
+								fromToMapping.put(make_int("j"), make_int("x_" + s.step));
+								right = fmgr.substitute(right, fromToMapping);
+							}
 							e.thetaRight.add(right);
-							e.read.add(READ.get(temp));
+							e.read.add(read);
 							ArrayList<BooleanFormula> freeBooleanVariablesRight = extractUFs(right);
 							for(int k = 0; k < freeBooleanVariablesRight.size(); k++)
 								tempR.add(freeBooleanVariablesRight.get(k));
