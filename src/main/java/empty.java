@@ -29,7 +29,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class empty {
 	
@@ -43,8 +45,17 @@ public class empty {
 	  Configuration config = Configuration.defaultConfiguration();
 	  LogManager logger = BasicLogManager.create(config);
 	  ShutdownManager shutdown = ShutdownManager.create();
+
+    // SolverContext is a class wrapping a solver context.
+    // Solver can be selected either using an argument or a configuration option
+    // inside `config`.
+
+      // SolverContext context = SolverContextFactory.createSolverContext(
+      //     config, logger, shutdown.getNotifier(), Solvers.SMTINTERPOL);
+      // System.exit(0);
     
-	  //System.out.println(NativeLibraries.getNativeLibraryPath());
+	  System.out.println(NativeLibraries.getNativeLibraryPath());
+	  System.out.println(System.getProperty("java.library.path"));
 	  
 	  Solvers solver = Solvers.MATHSAT5;
 	  String inputFile = null;

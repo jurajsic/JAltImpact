@@ -1,0 +1,13 @@
+<ivy-module version="2.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+       xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">  
+    <info  
+        organisation=""  
+        module="JavaTest"  
+        status="integration">  
+    </info>  
+  
+    <dependencies>  
+      <dependency org="org.sosy_lab" name="java-smt" rev="3.6.0"/>
+        <dependency org="junit" name="junit" rev="3.8.1" />
+    </dependencies>  
+</ivy-module>  

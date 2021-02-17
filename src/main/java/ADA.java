@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.sosy_lab.common.Classes;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -181,7 +182,7 @@ public class ADA {
 			InterruptedException
 	{
 		CheckResult result = new CheckResult();
-		InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation();
+		InterpolatingProverEnvironment prover = context.newProverEnvironmentWithInterpolation(ProverOptions.GENERATE_MODELS);
 		/*List<Set> temp = new ArrayList<Set>();
 		for(int i = 0; i < cb.size(); i++) {
 			Set<Object> temp2 = new HashSet();
