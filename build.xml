@@ -31,6 +31,25 @@
         </java>
     </target>
 
+
+    <property name="Ant-Version"             value="Apache Ant 1.8.2"/>
+    <property name="Built-By"                value="Yashwanth.Merugu"/>
+
+    <target name="jar" depends="build">
+
+        <manifest file = "MANIFEST.MF"> <!-- Manifest-Version: 1.0 -->
+            <attribute name = "Built-By"    value = "${Built-By}"/>
+            <attribute name = "Ant-Version" value = "${Ant-Version}"/>
+            <attribute name = "Main-Class"  value = "empty"/>
+            <attribute name = "Class-Path"  value = "."/>
+        </manifest>
+
+        <jar destfile="${basedir}/empty.jar" basedir="${build.dir}" manifest="MANIFEST.MF">
+            <fileset dir="${build.dir}" includes="**/*.class" />
+            <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" />
+        </jar>
+    </target>
+
     <target name="clean" description="clean the project">
       <delete dir="${build.dir}"/>
       <delete dir="${lib.dir}"/>
